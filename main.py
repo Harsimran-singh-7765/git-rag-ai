@@ -14,7 +14,9 @@ page = st.sidebar.radio("Go to", ["🏠 Home", "🤖 Chatbot", "📂 Decode"])
 
 
 # 🧠 Persistent session state
-for key in ["vectorstore", "repo_url", "chat_history", "readme_summary", "readme_raw"]:
+
+for key in ["vectorstore", "repo_url", "repo_path", "chat_history", "readme_summary", "readme_raw", "selected_file_path"]:
+
     if key not in st.session_state:
         st.session_state[key] = None if key != "chat_history" else []
 
@@ -26,25 +28,28 @@ if page == "🏠 Home":
     if repo_url and st.session_state.repo_url != repo_url:
         with st.spinner("🔄 Cloning repo..."):
             repo_path = clone_repo(repo_url)
-            st.session_state.repo_url = repo_url
-            st.session_state.repo_path = repo_path
+            if repo_path is None:
+                st.error("❌ Failed to clone the repo. Please check the URL.")
+            else:
+                st.session_state.repo_url = repo_url
+                st.session_state.repo_path = repo_path
 
         with st.spinner("📦 Processing and embedding repo..."):
             vectorstore, summary, readme_content = load_and_embed_repo(repo_path)
             st.session_state.vectorstore = vectorstore
-            st.session_state.readme_summary = summary
-            st.session_state.readme_raw = readme_content
-            st.session_state.chat_history = []  # reset chat
-            
-      
-
+            st.session_state.readme_summary = summary or None
+            st.session_state.readme_raw = readme_content or None
+            st.session_state.chat_history = []
+            st.session_state.selected_file_path = None
 
         st.success("✅ Repo processed successfully! Switch to Chatbot tab to ask questions.")
+
 
     if st.session_state.readme_summary:
         with st.expander("📖 README Summary", expanded=True):
             st.markdown(st.session_state.readme_summary)
-
+    elif st.session_state.repo_path:
+        st.info("ℹ️ This repo doesn’t contain a valid README.md")
     if st.session_state.readme_raw:
         with st.expander("📝 Full README.md"):
             st.code(st.session_state.readme_raw, language="markdown")
@@ -105,19 +110,21 @@ elif page == "📂 Decode":
         file_tree = build_file_tree(repo_path)
 
         col1, col2 = st.columns([1, 3])
-
         with col1:
-            if "selected_file_path" not in st.session_state:
+            # ✅ Corrected condition
+            if not st.session_state.selected_file_path:
                 btn_label = "📊 Hide Project Info" if st.session_state.show_project_info else "📊 Show Project Info"
                 if st.button(btn_label, key="toggle_info_btn"):
                     st.session_state.show_project_info = not st.session_state.show_project_info
+
             st.subheader("📂 Project Files")
             render_tree(file_tree)
 
 
 
         with col2:
-            if "selected_file_path" in st.session_state:
+            if "selected_file_path" in st.session_state and st.session_state.selected_file_path:
+
                 selected = st.session_state.selected_file_path
                 st.subheader(f"📄 {os.path.basename(selected)}")
 
@@ -161,7 +168,10 @@ elif page == "📂 Decode":
 
             elif st.session_state.show_project_info:
                 st.subheader("📊 Language Usage in Project")
-                lang_data = analyze_languages("cloned_repo")
+                repo_path = st.session_state.get("repo_path", "cloned_repo")
+                lang_data = analyze_languages(repo_path)
+
+                
                 if lang_data:
                     fig, ax = plt.subplots(figsize=(3, 3))
                     fig.patch.set_alpha(0)

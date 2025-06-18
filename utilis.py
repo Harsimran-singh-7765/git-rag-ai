@@ -43,9 +43,7 @@ EXT_TO_LANG = {
     ".env": "ENV",
 
     # Markup & Docs
-    ".md": "Markdown",
-    ".rst": "reStructuredText",
-    ".txt": "Text",
+
 
     # Notebook & Data Science
     ".ipynb": "Jupyter Notebook",
@@ -68,13 +66,21 @@ EXT_TO_LANG = {
 
 
 def analyze_languages(repo_path: str) -> dict:
-    """Analyzes file extensions to estimate language usage."""
+    """Analyzes file extensions and names to estimate language usage."""
     counter = Counter()
 
     for file_path in Path(repo_path).rglob("*"):
         if file_path.is_file():
             ext = file_path.suffix.lower()
+            name = file_path.name.lower()
+
+            # Try matching by extension first
             lang = EXT_TO_LANG.get(ext)
+
+            # If no match by extension, try by full filename
+            if not lang:
+                lang = EXT_TO_LANG.get(name)
+
             if lang:
                 counter[lang] += 1
 
