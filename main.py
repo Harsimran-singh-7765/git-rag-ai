@@ -10,7 +10,8 @@ st.title("🚀 Decodify  –  GitHub Repo Decoded ")
 
 # Sidebar Navigation
 st.sidebar.title("🚀Decodify  ")
-page = st.sidebar.radio("Go to", ["🏠 Home", "🤖 Chatbot", "📂 Decode"])
+page = st.sidebar.radio("Go to", ["🏠 Home", "🤖 Chatbot", "📂 Decode", "📈 Rate My Repo"])
+
 
 
 # 🧠 Persistent session state
@@ -23,37 +24,45 @@ for key in ["vectorstore", "repo_url", "repo_path", "chat_history", "readme_summ
 # 🏠 HOME PAGE (Repo Input + README display)
 if page == "🏠 Home":
     st.subheader("🔗 Enter GitHub Repo URL:")
-    repo_url = st.text_input(" ")
 
-    if repo_url and st.session_state.repo_url != repo_url:
-        with st.spinner("🔄 Cloning repo..."):
-            repo_path = clone_repo(repo_url)
-            if repo_path is None:
-                st.error("❌ Failed to clone the repo. Please check the URL.")
-            else:
-                st.session_state.repo_url = repo_url
-                st.session_state.repo_path = repo_path
+    # STEP 1: Only allow input if no repo_url yet
+    if st.session_state.repo_url:
+        st.success(f"✅ Repo Loaded: `{st.session_state.repo_url}`")
+        st.info("🔄 Refresh the app or click below to enter a new repo.")
 
-        with st.spinner("📦 Processing and embedding repo..."):
-            vectorstore, summary, readme_content = load_and_embed_repo(repo_path)
-            st.session_state.vectorstore = vectorstore
-            st.session_state.readme_summary = summary or None
-            st.session_state.readme_raw = readme_content or None
-            st.session_state.chat_history = []
-            st.session_state.selected_file_path = None
+    else:
+        # Fresh input only if no URL already stored
+        repo_url = st.text_input("Paste your GitHub repo URL")
 
-        st.success("✅ Repo processed successfully! Switch to Chatbot tab to ask questions.")
+        if repo_url:
+            with st.spinner("🔄 Cloning repo..."):
+                repo_path = clone_repo(repo_url)
+                if repo_path is None:
+                    st.error("❌ Failed to clone the repo. Please check the URL.")
+                else:
+                    st.session_state.repo_url = repo_url
+                    st.session_state.repo_path = repo_path
 
+            with st.spinner("📦 Processing and embedding repo..."):
+                vectorstore, summary, readme_content = load_and_embed_repo(repo_path)
+                st.session_state.vectorstore = vectorstore
+                st.session_state.readme_summary = summary or None
+                st.session_state.readme_raw = readme_content or None
+                st.session_state.chat_history = []
+                st.session_state.selected_file_path = None
 
+            st.success("✅ Repo processed successfully! Switch to Chatbot or Decode tab.")
+
+    # Show summaries if available
     if st.session_state.readme_summary:
         with st.expander("📖 README Summary", expanded=True):
             st.markdown(st.session_state.readme_summary)
     elif st.session_state.repo_path:
         st.info("ℹ️ This repo doesn’t contain a valid README.md")
+
     if st.session_state.readme_raw:
         with st.expander("📝 Full README.md"):
             st.code(st.session_state.readme_raw, language="markdown")
-
 
 # 🤖 CHATBOT PAGE
 elif page == "🤖 Chatbot":
@@ -198,3 +207,59 @@ elif page == "📂 Decode":
     else:
         st.warning("⚠️ Please load a repository first from the Home page.")
 
+
+
+elif page == "📈 Rate My Repo":
+    st.subheader("📈 AI Repo Rating")
+
+    if st.session_state.get("vectorstore"):
+        from langchain.docstore.document import Document
+
+        
+
+        with st.spinner("🧠 Collecting repo understanding..."):
+            try:
+                # Retrieve top documents from the vectorstore
+                similar_docs = st.session_state.vectorstore.similarity_search("Project overview and purpose", k=10)
+
+                combined_content = "\n\n---\n\n".join([doc.page_content[:2000] for doc in similar_docs])
+                
+                review_prompt = f"""
+                            You are a senior AI-powered developer and code reviewer.
+
+                            Given this codebase context, please:
+                            1. Give a star rating out of 5 for:
+                            - Code Quality
+                            - Project Structure
+                            - Clarity & Purpose
+                            - above the Net rating
+                            show rating in forms of stars for visual appeal , use streamlit.progress
+                            2. Explain in a human-friendly tone:
+                            - Main purpose of the project
+                            - Strengths and highlights
+                            - Weaknesses or bad practices
+                            - How the developer can improve
+                            3. Make it motivational but honest.
+                            don't be repitative , be presise with your judgment
+                            Here is the context of the repo (including code and structure):
+
+                {combined_content[:18000]}
+                """
+
+                response = ask_question(
+                    review_prompt,
+                    st.session_state.vectorstore,
+                    readme_text=st.session_state.readme_raw or ""
+                )
+
+                st.success("✅ Repo Review Complete!")
+                st.markdown("### 🧠 AI Review")
+                st.markdown(response)
+                
+
+
+            except Exception as e:
+                st.error(f"❌ Could not analyze repo: {e}")
+
+    else:
+        st.warning("⚠️ Please load and process a repository from the Home page first.")
