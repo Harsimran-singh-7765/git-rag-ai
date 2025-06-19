@@ -10,7 +10,8 @@ st.title("🚀 Decodify  –  GitHub Repo Decoded ")
 
 # Sidebar Navigation
 st.sidebar.title("🚀Decodify  ")
-page = st.sidebar.radio("Go to", ["🏠 Home", "🤖 Chatbot", "📂 Decode", "📈 Rate My Repo"])
+page = st.sidebar.radio("Go to", ["🏠 Home", "🤖 Chatbot", "📂 Decode", "📈 Rate My Repo", "ℹ️ About"])
+
 
 
 
@@ -263,3 +264,41 @@ elif page == "📈 Rate My Repo":
 
     else:
         st.warning("⚠️ Please load and process a repository from the Home page first.")
+
+
+
+elif page == "ℹ️ About":
+    st.subheader("ℹ️ About Decodify")
+    st.markdown("""
+    **Decodify** is an intelligent code exploration tool designed to streamline the way developers interact with and understand GitHub repositories.
+
+    ---
+    ### 🔍 What Decodify Does:
+    - **Clone and Parse:** Seamlessly clone any public GitHub repo.
+    - **Smart Summaries:** Extract and summarize the README and project structure.
+    - **AI Chat Interface:** Interact with the codebase through natural language queries.
+    - **Language Visualization:** Visual breakdown of code distribution using charts.
+    - **AI Repo Rating:** Evaluate the quality of the repository using advanced LLMs — including code clarity, structure, and maintainability.
+
+    ---
+    ### 🛠️ Built With:
+    - **Streamlit** for a sleek, reactive frontend
+    - **LangChain** to integrate intelligent vector-based document retrieval
+    - **Gemini Pro** for deep language understanding and reasoning
+    - **FAISS** for fast and scalable semantic search
+    - **Python + GitPython** for backend operations
+
+    ---
+    ### 🎯 Why Decodify?
+    Developers often waste hours trying to understand poorly documented projects or unfamiliar codebases. Decodify changes that. It brings **clarity, context, and insight** — instantly.
+
+    ---
+    ### 👨‍💻 About the Creator:
+    *Crafted by Harsimran Singh*
+
+    ---
+    #### 📫 Want to contribute, collaborate, or connect?
+    Reach out via [GitHub](https://github.com/Harsimran-singh-7765) or drop a message.
+
+    > *"Code is meant to be understood. Decodify ensures it is."*
+    """)
